@@ -2,7 +2,9 @@ import Bootstrap.*;
 import com.github.kevinsawicki.http.HttpRequest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HostCollision implements Runnable {
     private ProgramHelpers programHelpers;
@@ -28,17 +30,26 @@ public class HostCollision implements Runnable {
 
     @Override
     public void run() {
-        for (String ip : ipList) {
-            for (String protocol : scanProtocols) {
+
+        for (String protocol : scanProtocols) {
+            List<List<HttpCustomRequest>> dataSamples = new ArrayList<>();
+            List<HttpCustomRequest> baseRequests = new ArrayList<>();
+            List<HttpCustomRequest> errorHostRequests = new ArrayList<>();
+            Map<String, Boolean> needscans = new HashMap<>();
+            for (int i = 0; i < ipList.size(); i++) {
+                String ip = ipList.get(i);
                 try {
                     // 数据样本
                     List<HttpCustomRequest> dataSample = new ArrayList<>();
+                    dataSamples.add(dataSample);
 
                     // 基础请求
                     HttpCustomRequest baseRequest = programHelpers.sendHttpGetRequest(protocol, ip, "");
 
                     // 绝对错误请求
                     HttpCustomRequest errorHostRequest = programHelpers.sendHttpGetRequest(protocol, ip, programHelpers.getErrorHost());
+                    baseRequests.add(baseRequest);
+                    errorHostRequests.add(errorHostRequest);
 
                     // 请求长度判断
                     List<HttpCustomRequest> hcr = new ArrayList<>();
@@ -47,20 +58,41 @@ public class HostCollision implements Runnable {
 
                     ReturnFormat requestLengthMatchingReturn = requestLengthMatching(hcr);
                     if (!requestLengthMatchingReturn.result()) {
+                        needscans.put(String.format("%s://%s", protocol, ip), false);
                         statistics.add("numOfRequest", hostList.size());
                         if (programHelpers.isOutputErrorLog()) {
-                            String str = String.format("协议:%s, ip:%s, host:%s 该请求长度为%s 有异常,不进行碰撞-1",
+                            String str = String.format("协议:%s, ip:%s 该请求长度为%s 有异常,不进行碰撞-1",
                                     protocol, ip,
-                                    requestLengthMatchingReturn.request().host(),
                                     requestLengthMatchingReturn.request().contentLength());
                             System.out.println(str);
                         }
-                        continue;
+                    }else{
+                        needscans.put(String.format("%s://%s", protocol, ip), true);
                     }
 
-                    for (String host : hostList) {
+                } catch (HttpRequest.HttpRequestException e) {
+                    statistics.add("numOfRequest", hostList.size());
+                    if (programHelpers.isOutputErrorLog()) {
+                        String str = String.format("error: 站点 %s 访问失败,不进行host碰撞", protocol + ip);
+                        System.out.println(str);
+                    }
+                    needscans.put(String.format("%s://%s", protocol, ip), false);
+                }
+            }
+            for (String host : hostList) {
+                for (int i = 0; i < ipList.size(); i++) {
+                    String ip = ipList.get(i);
+                    try {
+                        Boolean needscan = needscans.get(String.format("%s://%s", protocol, ip));
+                        if (!needscan){
+                            continue;
+                        }
+                        List<HttpCustomRequest> dataSample = dataSamples.get(i);
                         statistics.add("numOfRequest", 1);
+                        HttpCustomRequest baseRequest = baseRequests.get(i);
 
+                        // 绝对错误请求
+                        HttpCustomRequest errorHostRequest = errorHostRequests.get(i);
                         try {
                             // 正式进行host碰撞
                             collision(dataSample, baseRequest, errorHostRequest, protocol, ip, host);
@@ -71,14 +103,17 @@ public class HostCollision implements Runnable {
                             }
                             continue;
                         }
+
+                    } catch (HttpRequest.HttpRequestException hre) {
+                        statistics.add("numOfRequest", hostList.size());
+                        if (programHelpers.isOutputErrorLog()) {
+                            String str = String.format("error: 站点 %s 访问失败,不进行host碰撞", protocol + ip);
+                            System.out.println(str);
+                        }
                     }
-                } catch (HttpRequest.HttpRequestException hre) {
-                    statistics.add("numOfRequest", hostList.size());
-                    if (programHelpers.isOutputErrorLog()) {
-                        String str = String.format("error: 站点 %s 访问失败,不进行host碰撞", protocol + ip);
-                        System.out.println(str);
-                    }
+
                 }
+
             }
         }
     }

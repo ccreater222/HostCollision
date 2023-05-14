@@ -215,7 +215,7 @@ public class Main {
         // 建立线程池
         System.out.println("=======================建 立 线 程 池=======================");
         List<Thread> threadPool = new ArrayList<>();
-        for (List<String> ipList : getIpChunk()) {
+        for (List<String> hostList : getHostChunk()) {
             threadPool.add(
                     new Thread(
                             new HostCollision(
@@ -223,8 +223,8 @@ public class Main {
                                     statistics,
                                     collisionSuccessList,
                                     scanProtocols,
-                                    ipList,
-                                    getHostList())));
+                                    getIpList(),
+                                    hostList)));
         }
 
         // 线程启动
@@ -353,6 +353,16 @@ public class Main {
      */
     private static List<String> getIpList() {
         return CustomHelpers.dataCleaning(CustomHelpers.convertStringToList(ipData, "\n"));
+    }
+
+    /**
+     * 获取host数据分块
+     *
+     * @return List<List < String>>
+     */
+    private static List<List<String>> getHostChunk(){
+        List<List<String>> hostChunk = CustomHelpers.listChunkSplit(getHostList(), programHelpers.getThreadTotal());
+        return hostChunk;
     }
 
     /**
