@@ -200,7 +200,7 @@ public class ProgramHelpers {
     public HttpCustomRequest sendHttpGetRequest(String protocol, String ip, String host) {
         // 一定要固定一个 userAgent 头
         // 有的请求不一样的 userAgent 返回的内容也不一样,容易导致误报
-        String userAgent = "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36";
+        String userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/112.0";
 
         String url = protocol + ip;
         HttpRequest request = HttpRequest.get(url);
