@@ -215,7 +215,7 @@ public class Main {
         // 建立线程池
         System.out.println("=======================建 立 线 程 池=======================");
         List<Thread> threadPool = new ArrayList<>();
-        for (List<String> hostList : getHostChunk()) {
+        for (List<String> ipList : getIpChunk()) {
             threadPool.add(
                     new Thread(
                             new HostCollision(
@@ -223,8 +223,8 @@ public class Main {
                                     statistics,
                                     collisionSuccessList,
                                     scanProtocols,
-                                    getIpList(),
-                                    hostList)));
+                                    ipList,
+                                    getHostList())));
         }
 
         // 线程启动

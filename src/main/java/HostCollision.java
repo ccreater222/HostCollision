@@ -77,6 +77,12 @@ public class HostCollision implements Runnable {
                         System.out.println(str);
                     }
                     needscans.put(String.format("%s://%s", protocol, ip), false);
+                    if(dataSamples.size()>baseRequests.size()){
+                        baseRequests.add(null);
+                    }
+                    if(dataSamples.size()>errorHostRequests.size()){
+                        errorHostRequests.add(null);
+                    }
                 }
             }
             for (String host : hostList) {
